@@ -2,6 +2,14 @@ import json
 import os
 import random
 
+relative_directory = 'carbon_configs'
+
+# Get the absolute path of the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+# Create the absolute path of the target directory
+target_dir = os.path.join(script_dir, relative_directory)
+
 # Configuration des paramètres
 themes = [
     "3024-night", "a11y-dark", "blackboard", "base16-dark", "base16-light", "cobalt", "duotone",
@@ -15,11 +23,10 @@ font_families = [
     "Source Code Pro", "Space Mono", "Ubuntu Mono"
 ]
 
-output_dir = "carbon_configs"
 num_files = 100
 
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+if not os.path.exists(target_dir):
+    os.makedirs(target_dir)
 
 # Générer les configurations
 configurations = []
@@ -38,7 +45,7 @@ for theme in themes:
             "dropShadowBlurRadius": "68px",
             "theme": theme,
             "windowTheme": "none",
-            "language": "text/x-c++src", # changer language pour "python" ou "haskell" 
+            "language": "python", # changer language pour "python" ou "haskell" 
             "fontFamily": random.choice(font_families),
             "fontSize": f"{random.randint(12, 16)}px",
             "lineHeight": f"{random.randint(100, 200)}%",
@@ -58,7 +65,7 @@ for theme in themes:
 
 # Sauvegarder les configurations en fichiers JSON
 for i, config in enumerate(configurations):
-    file_path = os.path.join(output_dir, f"{i + 1}.json")
+    file_path = os.path.join(target_dir, f"{i + 1}.json")
     with open(file_path, 'w') as f:
         json.dump(config, f, indent=4)
 
