@@ -1,8 +1,8 @@
 from PIL import Image, ImageOps
 import os
 
-relative_input_directory = 'src'
-relative_output_directory = 'dst'
+relative_input_directory = 'originals/py'
+relative_output_directory = 'cropped_224'
 
 # Get the absolute path of the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,10 +14,13 @@ output_dir = os.path.join(script_dir, relative_output_directory)
 os.makedirs(output_dir, exist_ok=True)
 
 # Taille cible
-target_size = (512, 512)
+target_size = (224, 224)
 
 def resize_and_crop(image_path, output_path, size):
     with Image.open(image_path) as img:
+        img = img.crop((32, 32, 704, 704))
+        
+        
         # Redimensionner la largeur à 512 pixels tout en conservant le ratio d'aspect
         img = img.resize((size[0], int(img.height * size[0] / img.width)), Image.Resampling.LANCZOS)
         
