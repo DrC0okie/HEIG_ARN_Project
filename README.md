@@ -1,20 +1,35 @@
-# HEIG_ARN_Projet
+---
+title: "Practical Work 05 – Transfer learning, part 2"
+author: [Anthony David, Jarod Streckeisen, Timothée Van Hove]
+date: \today
+subject: "ARN - PW5"
+subtitle: "Object recognition in the wild using Convolutional Neural Networks"
+lang: "fr"
+titlepage: true
+titlepage-rule-color: "D9291B"
+toc: true
+toc-own-page: true
+number-sections: true
+caption-justification: centering
+graphics: yes
+geometry: "top=2cm, bottom=2cm, left=2cm, right=2cm"
+header-includes:
+    - \usepackage{amssymb}
+titlepage-logo: "./img/logoHEIG.png"
+logo-width: 50mm
+---
 
-**Authors**: Anthony David, Jarod Streckeisen, Timothée Van Hove
-
-**Date**: 06/15/2024
-
-## Introduction
+# Introduction
 
 In this report, we explore the challenge of classifying code images using CNNs, specifically leveraging the MobileNetV2 architecture through transfer learning. Our goal is to classify three programming languages: C++, Python, and Haskell. Given the nature of code images, which combine textual and structural elements, this task presents challenges compared to traditional image classification.
 
 This practical work aims to evaluate the effectiveness of CNNs in this domain and identify potential areas for improvement in model architecture and training methodology.
 
-## The Problem
+# The Problem
 
 The task is to classify code images into three programming languages: C++, Python, and Haskell. We collected a balanced dataset with 100 code samples for each language, sourced from GitHub repositories. The collected images are visually diverse, representing various coding styles and formatting preferences within each language. Below are examples showing the intra-class diversity and the apparent difficulty due to inter-class similarity.
 
-## Data Collection
+# Data Collection
 
 Because we couldn't simply use  `bing-image-downloader` for our model application, we had to manually collect our code samples.  The first step was to gather 100 code samples for each of the three programming languages: C++, Python, and Haskell. We sourced these samples from GitHub repositories, which was extremely time-consuming. Each sample needed to be representative of the language's syntax and structure to ensure a comprehensive dataset.
 
@@ -24,13 +39,13 @@ We experimented with two methods to achieve the best possible results from our i
 
 
 
-## Data Preparation
+# Data Preparation
 
 To prepare the data for training, we performed several preprocessing steps. First, each code sample was resized to 224x224 pixels to match the input size required by MobileNetV2. We normalized the pixel values to a range of [0, 1] to standardize the input data. The dataset was split into training and test sets with an 80/20 split, ensuring a balanced distribution of samples across all three classes. We initially encountered challenges related to image dimensions, which necessitated careful resizing and normalization to maintain the quality of the code features.
 
-![](img/train_test_qty.png)
+![Stacked distribution of images in training and test dataset](img/train_test_qty.png){width=45%}
 
-## Global architecture
+# Global architecture
 
 The architecture of our model is designed around MobileNetV2, that serves as the base model, pre-trained on ImageNet.
 
@@ -42,7 +57,7 @@ In our attempts to build an good model, we experimented with a lot of different 
 
 
 
-## Experiment 1: Extracting features from small tiles of code
+# Experiment 1: Extracting features from small tiles of code
 
 Our initial approach involved cropping the images to 672x672 pixels and then resizing them to 224x224 pixels. However, this method resulted in poor model accuracy, suggesting that the resized images lost critical detail needed for effective feature extraction.
 
@@ -58,11 +73,11 @@ Haskell images generated: 404
 Python images generated: 395
 ````
 
-![](img/tiles.png)
+![Exemples of images used in this pratical work](img/tiles.png)
 
 
 
-### Model architecture for this experiment
+## Model architecture for this experiment
 
 For this experiments, the most significant impact on performance was observed with different amounts of unfrozen layers in the MobileNetV2 bas model. Given the difference between our code images and the images used to train the ImageNet model, increasing the number of unfrozen layers probably led to better adaptation and improved performance.
 
@@ -72,28 +87,28 @@ We used the Adam optimizer with a learning rate of 0.0001, which combines the ad
 
 We experimented with different numbers of unfrozen layers in the MobileNetV2 base. We unfroze varying numbers of the last layers (34, 96 and 123) with the exact same model architecture. This helped us to see if by adapting various features learned from ImageNet to the specific nuances of our code images, had an effect on our model performance.
 
-### Obtained results
+## Obtained results
 
-#### Re-train 34 layers
+### Re-train 34 layers
 
-![](img\32l_128_graph.png)
+![Experiment 1 - Training and Validation Loss and Accuracy for 34 layers](img/32l_128_graph.png){width=95%}
 
-![](img/32l_128.png)
+![Experient 1 - Confusion matrix for 34 layers](img/32l_128.png){width=60%}
 
-#### Re-train 96 layers
+### Re-train 96 layers
 
-![](img/96l_128_graph.png)
+![Experient 1 - Training and Validation Loss and Accuracy for 96 layers](img/96l_128_graph.png){width=95%}
 
-![](img/96l_128.png)
+![Experient 1 - Confusion matrix for 96 layers](img/96l_128.png){width=60%}
 
 
-#### Re-train 123 layers
+### Re-train 123 layers
 
-![](img/123l_128_graph.png)
+![Experiment 1 - Training and Validation Loss and Accuracy for 123 layers](img/123l_128_graph.png){width=95%}
 
-![](img/123l_128.png)
+![Experient 1 - Confusion matrix for 123 layers](img/123l_128.png){width=60%}
 
-### Results evaluation
+## Results evaluation
 
 The provided graphs show the training and validation performance of our model over a number of epochs. From these graphs, we observe a discrepancy between the training and validation curves. The training curves indicate a consistent decrease in loss and an increase in accuracy, suggesting that the model is effectively learning from the training data. However, the validation curves tend to plateau and even increase after a few epochs, while the validation accuracy exhibits a similar plateau effect without improvement. This divergence indicates that the model is not generalizing well and is overfitting to the training data, capturing noise and specific patterns that do not translate to the validation set.
 
@@ -101,7 +116,7 @@ As we can see in the confusion matrices for each experiment, there is a small tr
 
 The heatmap image below shows the areas of attention generated by our model when classifying code images. The red regions in these heatmaps indicate the areas where the model is focusing its attention the most. Ideally, we would expect these red dots to align with distinct and meaningful features of the code, such as keywords, operators, and structural elements that are unique to each programming language. However, as observed, the red dots are scattered and often not aligned with these critical features. This misalignment suggests that the model is not effectively capturing the essential characteristics of the code snippets. Instead, it might be focusing on irrelevant parts of the images, leading to poor performance in accurately classifying the code.
 
-![](img/heatmap.png)
+![Experiment 1 - Heatmaps of Code Snippets](img/heatmap.png)
 
 
 
@@ -112,15 +127,15 @@ Our experiments and results indicate that the model did not generalize well to t
 3. The 224x224 pixel dimension of the images may not give enough context for the model to classify the three programming languages. Code snippets needs context to capture features, like syntax and structure, which are important for classification. The limited dimensions might restrict the model's ability to get the general context of the code, leading to low performance.
 4. CNNs are probably not be the best model for extracting features from images of text, such as code snippets. They are good for identifying spatial hierarchies and patterns in natural images, but they might not be well-suited for recognizing patterns in text data presented as images. To improve classification accuracy, it might be a good idea to explore other models or a combination of models better suited for text analysis, like transformers or recurrent neural networks (RNNs) integrated with CNNs.
 
-## Experiment 2: Extracting features from global code shape
+# Experiment 2: Extracting features from global code shape
 
 in our this experiment, we tried to determine whether the model could classify code images based on their global "shape" rather than specific characters or local patterns. This approach focuses on recognizing the overall structure and layout of the code snippets, hypothesizing that the unique formatting and indentation styles might provide sufficient features for classification.
 
 To implement this method, we relied only on the original 300 images generated from the code samples (1360x1360 pixels). These images were directly resized to 224x224 pixels. This resizing process allowed the entire code snippet to fit within the model's input dimensions, providing an overview of each code sample.
 
-![](img/cropped.png)
+![Exemples of resized images used in this pratical work](img/cropped.png)
 
-### Model architecture for this experiment
+## Model architecture for this experiment
 
 Again in this experiment we tried different configuration of dense output layers with either one or two layers like (64,64) (48,48) (32,32) (128) (64) with different amount of dropout.
 
@@ -128,24 +143,24 @@ We Finally kept the same model architecture as in the first experiment, includin
 
 As in the previous experiment, we experimented with different numbers of unfrozen layers (34, 96, and 123) to see if the model ability to get global code shapes improved with more layers being fine-tuned.
 
-### Obtained results
+# Obtained results
 
-#### Re-train 123 layers
-![](/img/2nd_123l_32-32_graph.png)
+### Re-train 123 layers
+![Experiment 2 - Training and Validation Loss and Accuracy for 123 layers](img/2nd_123l_32-32_graph.png){width=95%}
 
-![](/img/2nd_123l_32-32_matrix.png)
+![Experient 2 - Confusion matrix for 123 layers](img/2nd_123l_32-32_matrix.png){width=60%}
 
-#### Re-train 96 layers
-![](/img/2nd_96l_32-32_graph.png)
+### Re-train 96 layers
+![Experiment 2 - Training and Validation Loss and Accuracy for 96 layers](img/2nd_96l_32-32_graph.png){width=95%}
 
-![](/img/2nd_96l_32-32_matrix.png)
+![Experient 2 - Confusion matrix for 96 layers](img/2nd_96l_32-32_matrix.png){width=60%}
 
-#### Re-train 23 layers
-![](/img/2nd_23l_32-32_graph.png)
+### Re-train 23 layers
+![Experiment 2 - Training and Validation Loss and Accuracy for 23 layers](img/2nd_23l_32-32_graph.png){width=95%}
 
-![](/img/2nd_23l_32-32_matrix.png)
+![Experient 2 - Confusion matrix for 23 layers](img/2nd_23l_32-32_matrix.png){width=60%}
 
-### Results evaluation
+## Results evaluation
 
 The graphs above show the training and validation performance over several epochs. It is evident from these graphs that the training process was not effective. While the training loss decreased and accuracy increased, the validation curves showed a plateau, indicating that the model was not learning to generalize well. The validation accuracy remained significantly lower than the training accuracy, and the validation loss plateaued early, showing the model's struggles to capture patterns from the validation data.
 
@@ -155,17 +170,16 @@ One possible reason for this failure is that the distribution of code in the ima
 
 
 
-![](C:\Users\timot\Documents\HEIG\ARN\HEIG_ARN_Projet\img\heatmap_2nd_exp.png)
+![Experiment 1 - Heatmaps of Code Snippets](img/heatmap_2nd_exp.png){width=75%}
 
 
-
-## Real-world tests
+# Real-world tests
 
 We conducted those test with the architecture based on the first experiment because we had better results with it.
 
 
 
-## Conclusion
+# Conclusion
 
 The consistent underperformance across both experiments can be attributed to several factors:
 
@@ -174,7 +188,7 @@ The consistent underperformance across both experiments can be attributed to sev
 3. Programming languages needs an understanding of the context to identify their syntax. The low dimensions of the resized images can probably not give enough context for the model to identify the 3 different languages based on their structural features.
 4. CNNs, are powerful for image classification tasks, but they are certainly not a good choice for classifying images of code. The  syntactic structures in code are not easily captured by the spatial filters of CNNs. Alternative models, such as transformers or hybrid models combining CNNs with recurrent neural networks, might be a better choice for this kind of applications.
 
-### Dataset Improvement Suggestions
+## Dataset Improvement Suggestions
 
 Based on the results, we suggest collecting more diverse code samples, explore more preprocessing techniques to enhance feature extraction. Increasing the dataset size and diversity may help the model learn more significant features.
 
