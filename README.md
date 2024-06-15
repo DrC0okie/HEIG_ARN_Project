@@ -10,41 +10,61 @@ In this report, we explore the challenge of classifying code images using CNNs, 
 
 This practical work aims to evaluate the effectiveness of CNNs in this domain and identify potential areas for improvement in model architecture and training methodology.
 
-## Data Collection Process
+## The Problem
+
+The task is to classify code images into three programming languages: C++, Python, and Haskell. We collected a balanced dataset with 100 code samples for each language, sourced from GitHub repositories. The collected images are visually diverse, representing various coding styles and formatting preferences within each language. Below are examples showing the intra-class diversity and the apparent difficulty due to inter-class similarity.
+
+## Data Collection
 
 Because we couldn't simply use  `bing-image-downloader` for our model application, we had to manually collect our code samples.  The first step was to gather 100 code samples for each of the three programming languages: C++, Python, and Haskell. We sourced these samples from GitHub repositories, which was extremely time-consuming. Each sample needed to be representative of the language's syntax and structure to ensure a comprehensive dataset.
 
 To standardize the visual representation of the code snippets, we developed a script to generate Carbon configurations. Carbon is an online tool that allows to create images of source code. The script was designed to vary syntax highlighting themes, font families, and other parameters, reducing the risk of bias in the model's feature extraction process. This was important to be sure that the model learns to recognize the "essence" of the code rather than visual styles. Applying the configurations and generating images was a manual process. Each of the 300 code samples had to be pasted into Carbon with the specified configurations and saved individually. This manual effort was also very time-consuming.
 
-Initially, we encountered challenges related to the image dimensions required by MobileNet, the CNN architecture chosen for transfer learning. MobileNet mandates input images of 224x224 pixels, whereas our initial images were significantly larger (1360 pixels in width), necessitating resizing. 
-
 We experimented with two methods to achieve the best possible results from our initial data. The first involved extracting images into smaller tiles, allowing the model to detect distinct patterns within the code. The second method involved resizing the original images to leverage the global structure of the code.
 
 
+
+## Data Preparation
+
+To prepare the data for training, we performed several preprocessing steps. First, each code sample was resized to 224x224 pixels to match the input size required by MobileNetV2. We normalized the pixel values to a range of [0, 1] to standardize the input data. The dataset was split into training and test sets with an 80/20 split, ensuring a balanced distribution of samples across all three classes. We initially encountered challenges related to image dimensions, which necessitated careful resizing and normalization to maintain the quality of the code features.
+
+![](img/train_test_qty.png)
 
 ## Global architecture
 
 The architecture of our model is designed around MobileNetV2, that serves as the base model, pre-trained on ImageNet.
 
+We chose transfer learning because it offers some advantages for our problem. Firstly, MobileNetV2 has already learned to extract rich features from images, which can potentially be beneficial even though our domain (code images) differs from the original training domain (natural images). 
+
+Transfer learning is particularly useful for problems with limited data, as it reduces the need for extensive training from scratch. Given that we only had 400 or 100 images per class depending on the experiment, training a deep neural network from scratch would likely result in overfitting and poor generalization. By starting with a pre-trained model, we could maybe achieve better performance with fewer data and computational resources. 
+
 In our attempts to build an good model, we experimented with a lot of different parameters and configurations. We tested different dense layer setups, like 128 + 32 neurons, 48 + 48 neurons, single dense layers with 128 neurons, and configurations like 96 + 16 neurons. Different dropout rates,  RMSprop and Adam optimizers, we tried to incorporate kernel regularizers, activity regularizers, and bias regularizers to control overfitting. We compared the effectiveness of using GlobalAveragePooling2D() versus Flatten() for transitioning from convolutional layers to dense layers. Additionally, batch sizes of 16 and 32 were tested to find the best fit for our training process. The number of training epochs varied between 4 and 8 to observe how training duration affected model accuracy and loss. We also tried to use ReduceLROnPlateau (with RMSprop) to adjust the learning rate dynamically based on validation performance.
 
 
 
-## Method 1: Extracting features from small tiles of code
+## Experiment 1: Extracting features from small tiles of code
 
 Our initial approach involved cropping the images to 672x672 pixels and then resizing them to 224x224 pixels. However, this method resulted in poor model accuracy, suggesting that the resized images lost critical detail needed for effective feature extraction.
 
-To address this, we attempted data augmentation to expand our dataset, hypothesizing that the low accuracy might stem from insufficient data samples. Despite multiple fine-tuning attempts, it became clear that the primary issue was not the quantity of data but the quality of the resized images.
+To address this, we tried data augmentation to expand our dataset, hypothesizing that the bad accuracy might come from insufficient data samples. Despite multiple fine-tuning attempts, it became clear that the primary issue was not the quantity of data but the quality of the resized images.
 
-To enhance image quality, we adopted a strategy of dividing the original images into 448x448 pixel tiles. This approach maintained higher resolution within smaller sections of the images. Using OpenCV, we calculated the density of code within each tile through canny edge detection, selecting the most representative tiles based on this metric. This method not only preserved image quality but also ensured that the most critical parts of the code snippets were used for model training.
+To enhance image quality, we tried a strategy of dividing the original images into 448x448 pixel tiles. This approach maintained higher resolution within smaller sections of the images. Using OpenCV, we calculated the density of code within each tile through canny edge detection, selecting the most representative tiles based on this metric. This method not only preserved image quality but also ensured that the most critical parts of the code snippets were used for model training.
 
+Through this process we generated approximately 400 images of each class, giving us a balanced dataset:
 
+````
+C++ images generated: 395
+Haskell images generated: 404
+Python images generated: 395
+````
 
 ![](img/tiles.png)
 
-### Model architecture for this method
 
-For this experiments, the most significant impact on performance was observed with different amounts of unfrozen layers in the MobileNetV2 bas model. Given the difference between our code images and the images used to train the ImageNet model, increasing the number of unfrozen layers led to better adaptation and improved performance.
+
+### Model architecture for this experiment
+
+For this experiments, the most significant impact on performance was observed with different amounts of unfrozen layers in the MobileNetV2 bas model. Given the difference between our code images and the images used to train the ImageNet model, increasing the number of unfrozen layers probably led to better adaptation and improved performance.
 
 Following the Flatten layer, we incorporated a dense layer that consists of 128 neurons followed by a dropout layer with a 50% dropout rate. The use of ReLU activation helps the model to learn more complex patterns. The final output layer is a dense layer with a softmax activation function, matching the number of classes in our classification task (C++, Python, and Haskell). 
 
@@ -92,7 +112,7 @@ Our experiments and results indicate that the model did not generalize well to t
 3. The 224x224 pixel dimension of the images may not give enough context for the model to classify the three programming languages. Code snippets needs context to capture features, like syntax and structure, which are important for classification. The limited dimensions might restrict the model's ability to get the general context of the code, leading to low performance.
 4. CNNs are probably not be the best model for extracting features from images of text, such as code snippets. They are good for identifying spatial hierarchies and patterns in natural images, but they might not be well-suited for recognizing patterns in text data presented as images. To improve classification accuracy, it might be a good idea to explore other models or a combination of models better suited for text analysis, like transformers or recurrent neural networks (RNNs) integrated with CNNs.
 
-## Method 2: Extracting features from global code shape
+## Experiment 2: Extracting features from global code shape
 
 in our this experiment, we tried to determine whether the model could classify code images based on their global "shape" rather than specific characters or local patterns. This approach focuses on recognizing the overall structure and layout of the code snippets, hypothesizing that the unique formatting and indentation styles might provide sufficient features for classification.
 
@@ -100,7 +120,7 @@ To implement this method, we relied only on the original 300 images generated fr
 
 ![](img/cropped.png)
 
-### Model architecture for this method
+### Model architecture for this experiment
 
 Again in this experiment we tried different configuration of dense output layers with either one or two layers like (64,64) (48,48) (32,32) (128) (64) with different amount of dropout.
 
@@ -138,6 +158,13 @@ One possible reason for this failure is that the distribution of code in the ima
 ![](C:\Users\timot\Documents\HEIG\ARN\HEIG_ARN_Projet\img\heatmap_2nd_exp.png)
 
 
+
+## Real-world tests
+
+We conducted those test with the architecture based on the first experiment because we had better results with it.
+
+
+
 ## Conclusion
 
 The consistent underperformance across both experiments can be attributed to several factors:
@@ -146,6 +173,10 @@ The consistent underperformance across both experiments can be attributed to sev
 2. Code snippets have a lot of variability within the same class because of differences in coding styles, indentation, and formatting. This "intra-class variability" makes it difficult for our model to learn coherent patterns that can represent each language, resulting in bad generalization.
 3. Programming languages needs an understanding of the context to identify their syntax. The low dimensions of the resized images can probably not give enough context for the model to identify the 3 different languages based on their structural features.
 4. CNNs, are powerful for image classification tasks, but they are certainly not a good choice for classifying images of code. The  syntactic structures in code are not easily captured by the spatial filters of CNNs. Alternative models, such as transformers or hybrid models combining CNNs with recurrent neural networks, might be a better choice for this kind of applications.
+
+### Dataset Improvement Suggestions
+
+Based on the results, we suggest collecting more diverse code samples, explore more preprocessing techniques to enhance feature extraction. Increasing the dataset size and diversity may help the model learn more significant features.
 
 In conclusion, our experiments shows the difficulty of using CNNs for classifying code images and show that alternative approaches should be explored.
 
