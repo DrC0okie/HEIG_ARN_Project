@@ -50,7 +50,7 @@ We experimented with different numbers of unfrozen layers in the MobileNetV2 bas
 
 #### Re-train 34 layers
 
-![](C:\Users\timot\Documents\HEIG\ARN\HEIG_ARN_Projet\img\32l_128_graph.png)
+![](img\32l_128_graph.png)
 
 ![](img/32l_128.png)
 
@@ -59,7 +59,6 @@ We experimented with different numbers of unfrozen layers in the MobileNetV2 bas
 ![](img/96l_128_graph.png)
 
 ![](img/96l_128.png)
-
 
 
 #### Re-train 123 layers
@@ -91,26 +90,60 @@ Our experiments and results indicate that the model did not generalize well to t
 
 ## Method 2: Extracting features from global code shape
 
-This method aims to extract the global shape of the code in the images.
+This method aims to extract the global shape of the code in the images. We used 100 images of each class.
 
+Instead of cropping the image to 448x448 we kept the width size of 1360 pixel and cropped the bottom  to have a 1360x1360 image.
 
+Our goal here was to try to make the model focus on the globality of the code and not small parts. Instead of extracting symbol or keyword we wanted the model to focus about how the code was formatted.
+
+Because ImageNet only handle 224x224 image, we had to resize our 1360x1360 image and thus ending with very blurry image.
+
+[](/img/cropped.png)
 
 ### Model architecture for this method
 
+We kept the same architecture as the previous experiment. 
 
+We tried many configuration for the Dense Layer with either one or two layers like (64,64) (48,48) (32,32) (128) (64)
+
+Higher number of neurons tend to make the model overfit too much and didn't lead to any significant improvements. 
+
+We also kept ADAM as optimizer with a 0.0001 learning rate.
 
 ### Obtained results
 
+#### Re-train 123 layers
+![](/img/2nd_123l_32-32_graph.png)
 
+![](/img/2nd_123l_32-32_matrix.png)
+
+#### Re-train 96 layers
+![](/img/2nd_96l_32-32_graph.png)
+
+![](/img/2nd_96l_32-32_matrix.png)
+
+#### Re-train 23 layers
+![](/img/2nd_23l_32-32_graph.png)
+
+![](/img/2nd_23l_32-32_matrix.png)
 
 ### Results evaluation
 
+result are similar to first experiment with tiles.
+
+ImageNet is not able to extract any feature from our image, as we can see on the graph.
+Even changing the number of frozen layer doesn't really affect our model's accuracy.
+
+We think that our image are too different from what ImageNet was trained and whatever hyperparameters we try we can't make it better.
 
 
 ## Conclusion
 
+Our project was very ambitiuous and we didn't achieve to have a working model for our task.
+
 ### Why didn't it work?
 
+ImageNet is not suited for this kind of image. As seen during the course, it is trained on more generic image like plant or animals.
 
 
 ### Change model
