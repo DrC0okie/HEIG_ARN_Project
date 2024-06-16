@@ -12,13 +12,17 @@ In this report, we explore the challenge of classifying code images using CNNs, 
 
 This practical work aims to evaluate the effectiveness of CNNs in this domain and identify potential areas for improvement in model architecture and training methodology.
 
+
+
 ## The Problem
 
-The task is to classify code images into three programming languages: C++, Python, and Haskell. We collected a balanced dataset with 100 code samples for each language, sourced from GitHub repositories. The collected images are visually diverse, representing various coding styles and formatting preferences within each language. Below are examples showing the intra-class diversity and the apparent difficulty due to inter-class similarity.
+The task is to classify code images into three programming languages: C++, Python, and Haskell. We collected a balanced dataset with 100 code samples for each language, sourced from GitHub repositories. The collected images are visually diverse, representing different formatting preferences within each language. 
+
+
 
 ## Data Collection
 
-Because we couldn't simply use  `bing-image-downloader` for our model application, we had to manually collect our code samples.  The first step was to gather 100 code samples for each of the three programming languages: C++, Python, and Haskell. We sourced these samples from GitHub repositories, which was extremely time-consuming. Each sample needed to be representative of the language's syntax and structure to ensure a comprehensive dataset.
+We had to manually collect our code samples.  The first step was to gather 100 code samples for each of the three programming languages: C++, Python, and Haskell. We sourced these samples from GitHub repositories, which was extremely time-consuming. Each sample needed to be representative of the language's syntax and structure to ensure a comprehensive dataset.
 
 To standardize the visual representation of the code snippets, we developed a script to generate Carbon configurations. Carbon is an online tool that allows to create images of source code. The script was designed to vary syntax highlighting themes, font families, and other parameters, reducing the risk of bias in the model's feature extraction process. This was important to be sure that the model learns to recognize the "essence" of the code rather than visual styles. Applying the configurations and generating images was a manual process. Each of the 300 code samples had to be pasted into Carbon with the specified configurations and saved individually. This manual effort was also very time-consuming.
 
@@ -28,7 +32,7 @@ We experimented with two methods to achieve the best possible results from our i
 
 ## Data Preparation
 
-To prepare the data for training, we performed several preprocessing steps. First, each code sample was resized to 224x224 pixels to match the input size required by MobileNetV2. We normalized the pixel values to a range of [0, 1] to standardize the input data. The dataset was split into training and test sets with an 80/20 split, ensuring a balanced distribution of samples across all three classes. We initially encountered challenges related to image dimensions, which necessitated careful resizing and normalization to maintain the quality of the code features.
+Each code sample was resized to 224x224 pixels to match the input size required by MobileNetV2. We normalized the pixel values to a range of [0, 1] to standardize the input data. The dataset was split into training and test sets with an 80/20 split, ensuring a balanced distribution of samples across all three classes. We initially encountered challenges related to image dimensions, which necessitated careful resizing and normalization to maintain the quality of the code features.
 
 ![Stacked distribution of images in training and test dataset](img/train_test_qty.png){width=45%}
 
@@ -36,7 +40,7 @@ To prepare the data for training, we performed several preprocessing steps. Firs
 
 The architecture of our model is designed around MobileNetV2, that serves as the base model, pre-trained on ImageNet.
 
-We chose transfer learning because it offers some advantages for our problem. Firstly, MobileNetV2 has already learned to extract rich features from images, which can potentially be beneficial even though our domain (code images) differs from the original training domain (natural images). 
+We chose transfer learning because it could offer some advantages for our problem. Firstly, MobileNetV2 has already learned to extract rich features from images, which can potentially be beneficial even though our domain (code images) differs from the original training domain (natural images). 
 
 Transfer learning is particularly useful for problems with limited data, as it reduces the need for extensive training from scratch. Given that we only had 400 or 100 images per class depending on the experiment, training a deep neural network from scratch would likely result in overfitting and poor generalization. By starting with a pre-trained model, we could maybe achieve better performance with fewer data and computational resources. 
 
@@ -66,7 +70,9 @@ Python images generated: 395
 
 ### Experiment 1 model architecture
 
-For this experiments, the most significant impact on performance was observed with different amounts of unfrozen layers in the MobileNetV2 bas model. Given the difference between our code images and the images used to train the ImageNet model, increasing the number of unfrozen layers probably led to better adaptation and improved performance.
+For this experiments we also had better results with Flatten instead of GlobalAveragePooling, probably because Flatten retains all the spatial information from the convolutional layers, so every feature detected by the convolutional layers is preserved and passed on to the dense layers.
+
+Given the difference between our code images and the images used to train the ImageNet model, increasing the number of unfrozen layers probably lead to slightly better adaptation and improved performance. The output dense layers configuration did not have a significant impact on the overall results.
 
 Following the Flatten layer, we incorporated a dense layer that consists of 128 neurons followed by a dropout layer with a 50% dropout rate. The use of ReLU activation helps the model to learn more complex patterns. The final output layer is a dense layer with a softmax activation function, matching the number of classes in our classification task (C++, Python, and Haskell). 
 
@@ -82,11 +88,33 @@ We experimented with different numbers of unfrozen layers in the MobileNetV2 bas
 
 ![Experient 1 - Confusion matrix for 34 layers](img/32l_128.png){width=60%}
 
+**F1-scores for 34 unfrozen layers**
+
+````
+F-score cpp: 0.14705882352941174
+F-score hs: 0.4369747899159664
+F-score py: 0.5081081081081081
+F1 score global: 0.3640472405178288
+````
+
+
+
 **Re-train 96 layers**
 
 ![Experient 1 - Training and Validation Loss and Accuracy for 96 layers](img/96l_128_graph.png){width=95%}
 
 ![Experient 1 - Confusion matrix for 96 layers](img/96l_128.png){width=60%}
+
+**F1-scores for 96 unfrozen layers**
+
+````
+F-score cpp: 0.5894736842105264
+F-score hs: 0.4444444444444444
+F-score py: 0.5393258426966292
+F1 score global: 0.5244146571171999
+````
+
+
 
 **Re-train 123 layers**
 
@@ -94,15 +122,26 @@ We experimented with different numbers of unfrozen layers in the MobileNetV2 bas
 
 ![Experient 1 - Confusion matrix for 123 layers](img/123l_128.png){width=60%}
 
+**F1-scores for 123 unfrozen layers**
+
+````
+F-score cpp: 0.4367816091954023
+F-score hs: 0.6211180124223603
+F-score py: 0.532258064516129
+F1 score global: 0.5300525620446305
+````
+
+
+
 ### Experiment 1 results evaluation
 
 The provided graphs show the training and validation performance of our model over a number of epochs. From these graphs, we observe a discrepancy between the training and validation curves. The training curves indicate a consistent decrease in loss and an increase in accuracy, suggesting that the model is effectively learning from the training data. However, the validation curves tend to plateau and even increase after a few epochs, while the validation accuracy exhibits a similar plateau effect without improvement. This divergence indicates that the model is not generalizing well and is overfitting to the training data, capturing noise and specific patterns that do not translate to the validation set.
 
-As we can see in the confusion matrices for each experiment, there is a small trend of improvement with the increased number of unfrozen layers. With each experiment, where more layers were unfrozen, the model's ability to correctly classify the code images improved. This enhancement in performance is likely due to the model's increased capacity to fine-tune its parameters and better capture the features of code images, which are very different from the features present in natural images.
+As we can see in the confusion matrices for each experiment, there is a small trend of improvement with the increased number of unfrozen layers. This enhancement in performance is likely due to the model's increased capacity to fine-tune its parameters and better capture the features of code images, which are very different from the features present in natural images.
 
 The heatmap image below shows the areas of attention generated by our model when classifying code images. The red regions in these heatmaps indicate the areas where the model is focusing its attention the most. Ideally, we would expect these red dots to align with distinct and meaningful features of the code, such as keywords, operators, and structural elements that are unique to each programming language. However, as observed, the red dots are scattered and often not aligned with these critical features. This misalignment suggests that the model is not effectively capturing the essential characteristics of the code snippets. Instead, it might be focusing on irrelevant parts of the images, leading to poor performance in accurately classifying the code.
 
-![Experiment 1 - Heatmaps of Code Snippets](img/heatmap.png)
+![Experiment 1 - Heatmaps of Code Snippets](img/123_heatmap.png)
 
 
 
@@ -137,17 +176,50 @@ As in the previous experiment, we experimented with different numbers of unfroze
 
 ![Experient 2 - Confusion matrix for 123 layers](img/2nd_123l_32-32_matrix.png){width=60%}
 
+**F1-scores for 123 unfrozen layers**
+
+````
+F-score cpp: 0
+F-score hs: 0.2222222222222222
+F-score py: 0.4
+plot_confusion_matrix(test_confusion_matrix, label_encoder.classes_)
+````
+
+
+
 **Re-train 96 layers**
 
 ![Experiment 2 - Training and Validation Loss and Accuracy for 96 layers](img/2nd_96l_32-32_graph.png){width=95%}
 
 ![Experient 2 - Confusion matrix for 96 layers](img/2nd_96l_32-32_matrix.png){width=60%}
 
-**Re-train 23 layers**
+**F1-scores for 96 unfrozen layers**
+
+````
+F-score cpp: 0
+F-score hs: 0.2222222222222222
+F-score py: 0.4
+plot_confusion_matrix(test_confusion_matrix, label_encoder.classes_)
+````
+
+
+
+**Re-train 34 layers**
 
 ![Experiment 2 - Training and Validation Loss and Accuracy for 23 layers](img/2nd_23l_32-32_graph.png){width=95%}
 
 ![Experient 2 - Confusion matrix for 23 layers](img/2nd_23l_32-32_matrix.png){width=60%}
+
+**F1-scores for 34 unfrozen layers**
+
+````
+F-score cpp: 0
+F-score hs: 0.2222222222222222
+F-score py: 0.4
+plot_confusion_matrix(test_confusion_matrix, label_encoder.classes_)
+````
+
+
 
 ### Experiment 2 results evaluation
 
